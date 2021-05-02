@@ -1,0 +1,29 @@
+require:
+  - rubocop-rails
+
+AllCops:
+  NewCops: enable
+
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - '**/config/initializers/*'
+    - '**/config/environments/*'
+    - '**/lib/tasks/*'
+    - '**/test/**/*'
+
+Naming/FileName:
+  Exclude:
+    - 'Gemfile'
+
+Metrics/MethodLength:
+  Max: 15
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/SymbolArray:
+  EnforcedStyle: brackets
