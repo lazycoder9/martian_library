@@ -14,22 +14,26 @@ export const createCache = () => {
   return cache;
 };
 
-const getToken = () =>
-  document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const getTokens = () => {
+  const tokens = {
+    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+  };
+  const authToken = localStorage.getItem('mlToken');
+  return authToken ? { ...tokens, Authorization: authToken } : tokens;
+};
 
-const token = getToken();
-
-const setTokenForOperation = async operation =>
-  operation.setContext({
+const setTokenForOperation = async (operation) => {
+  return operation.setContext({
     headers: {
-      'X-CSRF-Token': token,
+      ...getTokens(),
     },
   });
+};
 
 const createLinkWithToken = () =>
   new ApolloLink(
     (operation, forward) =>
-      new Observable(observer => {
+      new Observable((observer) => {
         let handle;
         Promise.resolve(operation)
           .then(setTokenForOperation)
@@ -44,36 +48,34 @@ const createLinkWithToken = () =>
         return () => {
           if (handle) handle.unsubscribe();
         };
-      })
+      }),
   );
 
 const logError = (error) => console.error(error);
 
-const createErrorLink = () => onError(({ graphQLErrors, networkError, operation }) => {
-  if (graphQLErrors) {
-    logError('GraphQL - Error', {
-      errors: graphQLErrors,
-      operationName: operation.operationName,
-      variables: operation.variables,
-    });
-  }
-  if (networkError) {
-    logError('GraphQL - NetworkError', networkError);
-  }
-})
+const createErrorLink = () =>
+  onError(({ graphQLErrors, networkError, operation }) => {
+    if (graphQLErrors) {
+      logError('GraphQL - Error', {
+        errors: graphQLErrors,
+        operationName: operation.operationName,
+        variables: operation.variables,
+      });
+    }
+    if (networkError) {
+      logError('GraphQL - NetworkError', networkError);
+    }
+  });
 
-const createHttpLink = () => new HttpLink({
-  uri: '/graphql',
-  credentials: 'include',
-})
+const createHttpLink = () =>
+  new HttpLink({
+    uri: '/graphql',
+    credentials: 'include',
+  });
 
 export const createClient = (cache, requestLink) => {
   return new ApolloClient({
-    link: ApolloLink.from([
-      createErrorLink(),
-      createLinkWithToken(),
-      createHttpLink(),
-    ]),
+    link: ApolloLink.from([createErrorLink(), createLinkWithToken(), createHttpLink()]),
     cache,
   });
 };
